@@ -1,5 +1,5 @@
 # FilterRGB
-# Apk To Download: [FilterRGB.apk](https://github.com/MakarPronin/FilterRGB/blob/main/Screenshots_And_Apk/FilterRGB.apk)
+# Apk To Download: [FilterRGB.apk](https://github.com/MakarPronin/FilterRGB/raw/main/Screenshots_And_Apk/FilterRGB.apk)
 # Screenshots:
 ![Icon](./Screenshots_And_Apk/Icon.jpg) 
 ![Black And White](./Screenshots_And_Apk/Black_And_White.jpg)
