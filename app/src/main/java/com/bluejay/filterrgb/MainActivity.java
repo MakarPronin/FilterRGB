@@ -4,7 +4,9 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.AspectRatio;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.CameraXConfig;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -17,6 +19,7 @@ import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Size;
 import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.ViewGroup;
@@ -29,12 +32,17 @@ import android.widget.Toast;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
     private ImageView previewView;
     private OrientationEventListener orientationEventListener;
+    private String analysisResolution = "";
 
     private int filterR = 0;
     private int filterG = 0;
@@ -45,10 +53,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);;
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
         previewView = findViewById(R.id.previewView);
+        //analysisResolution = "1920x1080";
 
         setSeekBars();
 
@@ -166,12 +175,22 @@ public class MainActivity extends AppCompatActivity {
                 ImageAnalysis imageAnalysis;
                 ProcessCameraProvider cameraProvider= processCameraProvider.get();
 
-                imageAnalysis = new ImageAnalysis.Builder()
-                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                        .setTargetRotation(Surface.ROTATION_90)
-                        .build();
+                if (!analysisResolution.equals("")) {
+                    imageAnalysis = new ImageAnalysis.Builder()
+                            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                            .setTargetRotation(Surface.ROTATION_90)
+                            .setTargetResolution(Size.parseSize(analysisResolution))
+                            .build();
+                }
+                else {
+                    imageAnalysis = new ImageAnalysis.Builder()
+                            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                            .setTargetRotation(Surface.ROTATION_90)
+                            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                            .build();
+                }
 
-                imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), this::analyze);
+                imageAnalysis.setAnalyzer(Executors.newCachedThreadPool(), this::analyze);
                 cameraProvider.unbindAll();
                 cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, imageAnalysis);
             } catch (ExecutionException | InterruptedException e) {
@@ -190,15 +209,14 @@ public class MainActivity extends AppCompatActivity {
             int valueR = Byte.toUnsignedInt(buffer.get(i));
             int valueG = Byte.toUnsignedInt(buffer.get(i + 1));
             int valueB = Byte.toUnsignedInt(buffer.get(i + 2));
-            int valueA = Byte.toUnsignedInt(buffer.get(i + 3));
+            //int valueA = Byte.toUnsignedInt(buffer.get(i + 3));
 
             int sum = valueR + valueG + valueB;
             int newValueR = sum/3;
             int newValueG = sum/3;
             int newValueB = sum/3;
-            int newValueA = valueA;
+            //int newValueA = valueA;
 
-            int filterSum = filterR + filterG + filterB;
             boolean filterAppliedR = false;
             boolean filterAppliedG = false;
             boolean filterAppliedB = false;
@@ -231,14 +249,14 @@ public class MainActivity extends AppCompatActivity {
             byte newByteValueR = (byte)newValueR;
             byte newByteValueG = (byte)newValueG;
             byte newByteValueB = (byte)newValueB;
-            byte newByteValueA = (byte)newValueA;
+            //byte newByteValueA = (byte)newValueA;
             buffer.put(i, newByteValueR);
             buffer.put(i + 1, newByteValueG);
             buffer.put(i + 2, newByteValueB);
-            buffer.put(i + 3, newByteValueA);
+            //buffer.put(i + 3, newByteValueA);
         }
         bm.copyPixelsFromBuffer(buffer);
-        previewView.setImageBitmap(bm);
+        runOnUiThread(() -> previewView.setImageBitmap(bm));
 
         imageProxy.close();
     }

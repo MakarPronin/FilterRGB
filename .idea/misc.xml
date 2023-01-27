@@ -4,10 +4,14 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1035" />
+        <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/drawable/ic_baseline_settings_24.xml" value="0.1035" />
         <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/drawable/ic_launcher_background.xml" value="0.1035" />
+        <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/drawable/ic_launcher_foreground.xml" value="0.1035" />
         <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/drawable/seek_bar_thumb.xml" value="0.1035" />
         <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/drawable/seek_bar_thumb_r.xml" value="0.1035" />
         <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/layout/activity_main.xml" value="0.22826086956521738" />
+        <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.1035" />
+        <entry key="..\:/Users/makar/AndroidStudioProjects/filterRGB/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.1035" />
       </map>
     </option>
   </component>
