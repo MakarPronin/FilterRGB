@@ -14,8 +14,19 @@ import androidx.core.view.WindowCompat;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.ColorSpace;
+import android.graphics.ImageDecoder;
+import android.graphics.ImageFormat;
+import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.media.Image;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Size;
@@ -39,10 +50,11 @@ public class MainActivity extends AppCompatActivity {
     private ImageView previewView;
     private OrientationEventListener orientationEventListener;
     private String analysisResolution = "";
+    private Matrix previewRotationMatrix = new Matrix();
 
-    private int filterR = 0;
-    private int filterG = 0;
-    private int filterB = 0;
+    private float colorDeviation = 0;
+    private float colorFilter = 0;
+    float[] colorRange = new float[2];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,53 +65,55 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         previewView = findViewById(R.id.previewView);
-        //analysisResolution = "1920x1080";
+        analysisResolution = "360x640";
+
 
         setSeekBars();
-
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getRealMetrics(displayMetrics);
-        int screenHeight = displayMetrics.heightPixels;
-        int screenWidth = displayMetrics.widthPixels;
-
-        previewView.setRotation(90);
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(screenHeight, screenHeight);
-        previewView.setLayoutParams(layoutParams);
 
         orientationEventListener = new OrientationEventListener((Context)this) {
             @Override
             public void onOrientationChanged(int orientation) {
 
+
                 if (orientation >= 45 && orientation < 135) {
-                    previewView.setRotation(180);
-                    ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(screenWidth, screenHeight);
-                    previewView.setLayoutParams(layoutParams);
+                    previewRotationMatrix.postRotate(180);
                 } else if (orientation >= 225 && orientation < 315) {
-                    previewView.setRotation(0);
-                    ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(screenWidth, screenHeight);
-                    previewView.setLayoutParams(layoutParams);
+                    previewRotationMatrix.postRotate(0);
+                }
+                else {
+                    previewRotationMatrix.postRotate(90);
                 }
                 disableOrientationListener();
             }
         };
 
         orientationEventListener.enable();
+
         requestCameraPermission();
     }
 
 
     private void setSeekBars(){
-        SeekBar sbR = findViewById(R.id.seekBarR);
-        sbR.getThumb().setColorFilter(0xFFFF0000, PorterDuff.Mode.MULTIPLY);
-        SeekBar sbG = findViewById(R.id.seekBarG);
-        sbG.getThumb().setColorFilter(0xFF00FF00, PorterDuff.Mode.MULTIPLY);
-        SeekBar sbB = findViewById(R.id.seekBarB);
-        sbB.getThumb().setColorFilter(0xFF0000FF, PorterDuff.Mode.MULTIPLY);
+        SeekBar sbRGB = findViewById(R.id.seekBarRGB);
+        SeekBar sbRange = findViewById(R.id.seekBarRange);
+        sbRGB.getThumb().setColorFilter(Color.RED, PorterDuff.Mode.MULTIPLY);
 
-        sbR.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        sbRGB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                filterR = i;
+                colorFilter = (float) 3.6 * i;
+                float[] hsv = {colorFilter, 100, 100};
+                int color = Color.HSVToColor(hsv);
+                sbRGB.getThumb().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+
+                if (colorDeviation == 180){
+                    colorRange[0] = -1;
+                    colorRange[1] = 361;
+                }
+                else {
+                    colorRange[0] = (360 + colorFilter - colorDeviation) % 360;
+                    colorRange[1] = (colorFilter + colorDeviation) % 360;
+                }
             }
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
@@ -108,22 +122,19 @@ public class MainActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {
             }
         });
-        sbG.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        sbRange.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                filterG = i;
-            }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-            }
-        });
-        sbB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                filterB = i;
+                colorDeviation = (float) 1.8 * i;
+
+                if (i == 100){
+                    colorRange[0] = -1;
+                    colorRange[1] = 361;
+                }
+                else {
+                    colorRange[0] = (360 + colorFilter - colorDeviation) % 360;
+                    colorRange[1] = (colorFilter + colorDeviation) % 360;
+                }
             }
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
@@ -174,15 +185,15 @@ public class MainActivity extends AppCompatActivity {
                 if (!analysisResolution.equals("")) {
                     imageAnalysis = new ImageAnalysis.Builder()
                             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                            .setTargetRotation(Surface.ROTATION_90)
                             .setTargetResolution(Size.parseSize(analysisResolution))
+                            .setTargetRotation(Surface.ROTATION_0)
                             .build();
                 }
                 else {
                     imageAnalysis = new ImageAnalysis.Builder()
                             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                            .setTargetRotation(Surface.ROTATION_90)
                             .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                            .setTargetRotation(Surface.ROTATION_0)
                             .build();
                 }
 
@@ -196,63 +207,78 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private float[] RGBtoHSV(int[] rgb){
+        float r = (float)rgb[0] / 255;
+        float g = (float)rgb[1] / 255;
+        float b = (float)rgb[2] / 255;
+
+        float cmax = Math.max(r, Math.max(g, b));
+        float cmin = Math.min(r, Math.min(g, b));
+        float diff = cmax - cmin;
+        float h = -1, s = -1;
+
+        if (cmax == cmin) {
+            h = 0;
+        }
+        else if (cmax == r) {
+            h = (60 * ((g - b) / diff) + 360) % 360;
+        }
+
+        else if (cmax == g) {
+            h = (60 * ((b - r) / diff) + 120) % 360;
+        }
+
+        else if (cmax == b) {
+            h = (60 * ((r - g) / diff) + 240) % 360;
+        }
+
+        if (cmax == 0) {
+            s = 0;
+        }
+        else {
+            s = (diff / cmax) * 100;
+        }
+
+        float v = cmax * 100;
+
+        return new float[]{h,s,v};
+    }
+
     public void analyze(@NonNull ImageProxy imageProxy) {
         ImageProxy.PlaneProxy planeProxy = imageProxy.getPlanes()[0];
         ByteBuffer buffer = planeProxy.getBuffer();
 
         Bitmap bm = Bitmap.createBitmap(imageProxy.getWidth(), imageProxy.getHeight(), Bitmap.Config.ARGB_8888);
         for (int i = 0; i < buffer.capacity(); i += 4){
+
             int valueR = Byte.toUnsignedInt(buffer.get(i));
             int valueG = Byte.toUnsignedInt(buffer.get(i + 1));
             int valueB = Byte.toUnsignedInt(buffer.get(i + 2));
-            //int valueA = Byte.toUnsignedInt(buffer.get(i + 3));
 
-            int sum = valueR + valueG + valueB;
-            int newValueR = sum/3;
-            int newValueG = sum/3;
-            int newValueB = sum/3;
-            //int newValueA = valueA;
+            float[] hsv = RGBtoHSV(new int[]{valueR, valueG, valueB});
 
-            boolean filterAppliedR = false;
-            boolean filterAppliedG = false;
-            boolean filterAppliedB = false;
-
-            if ((float)valueR/sum > (float)(100 - filterR)/100) {
-                newValueR = valueR;
-                filterAppliedR = true;
-            }
-            if ((float)valueG/sum > (float)(100 - filterG)/100) {
-                newValueG = valueG;
-                filterAppliedG = true;
-            }
-            if ((float)valueB/sum > (float)(100 - filterB)/100) {
-                newValueB = valueB;
-                filterAppliedB = true;
-            }
-
-            if (filterAppliedR || filterAppliedG ||filterAppliedB){
-                if (!filterAppliedR){
-                    newValueR = 0;
-                }
-                if (!filterAppliedG){
-                    newValueG = 0;
-                }
-                if (!filterAppliedB){
-                    newValueB = 0;
+            if ((int)colorRange[1] < (int)colorRange[0]){
+                if (!(hsv[0] > colorRange[0] || hsv[0] < colorRange[1])){
+                    int average = (valueR + valueG + valueB)/3;
+                    buffer.put(i, (byte)average);
+                    buffer.put(i + 1, (byte)average);
+                    buffer.put(i + 2, (byte)average);
                 }
             }
-
-            byte newByteValueR = (byte)newValueR;
-            byte newByteValueG = (byte)newValueG;
-            byte newByteValueB = (byte)newValueB;
-            //byte newByteValueA = (byte)newValueA;
-            buffer.put(i, newByteValueR);
-            buffer.put(i + 1, newByteValueG);
-            buffer.put(i + 2, newByteValueB);
-            //buffer.put(i + 3, newByteValueA);
+            else{
+                if (!(hsv[0] > colorRange[0] && hsv[0] < colorRange[1])){
+                    int average = (valueR + valueG + valueB)/3;
+                    buffer.put(i, (byte)average);
+                    buffer.put(i + 1, (byte)average);
+                    buffer.put(i + 2, (byte)average);
+                }
+            }
         }
         bm.copyPixelsFromBuffer(buffer);
-        runOnUiThread(() -> previewView.setImageBitmap(bm));
+
+        Bitmap finalBm = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), previewRotationMatrix, true);
+
+        runOnUiThread(() -> previewView.setImageBitmap(finalBm));
 
         imageProxy.close();
     }

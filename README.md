@@ -2,8 +2,11 @@
 # Apk To Download: [FilterRGB.apk](https://github.com/MakarPronin/FilterRGB/raw/main/Screenshots_And_Apk/FilterRGB.apk)
 # Screenshots:
 ![Icon](./Screenshots_And_Apk/Icon.jpg) 
-![Black And White](./Screenshots_And_Apk/Black_And_White.jpg)
-![Blue And Green](./Screenshots_And_Apk/Blue_And_Green_Separated.jpg)
-![Blue And Green](./Screenshots_And_Apk/Blue_And_Green.jpg)
-![RGB](./Screenshots_And_Apk/RGB.jpg)
-![Portrait](./Screenshots_And_Apk/Portrait.jpg)
+![Screenshot1](./Screenshots_And_Apk/Screenshot1.jpg)
+![Screenshot2](./Screenshots_And_Apk/Screenshot2.jpg)
+![Screenshot3](./Screenshots_And_Apk/Screenshot3.jpg)
+![Screenshot4](./Screenshots_And_Apk/Screenshot4.jpg)
+![Screenshot5](./Screenshots_And_Apk/Screenshot5.jpg)
+![Screenshot6](./Screenshots_And_Apk/Screenshot6.jpg)
+![Screenshot7](./Screenshots_And_Apk/Screenshot7.jpg)
+
